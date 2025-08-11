@@ -428,7 +428,6 @@ def generate_output_content(
             except UnicodeDecodeError:
                 if skip_binary:
                     _add_chunk_to_output("binary content skipped")
-                    continue
                 else:
                     logging.debug('Handling binary file contents: %s', file_path)
                     with open(file_path, 'rb') as f_bin:
