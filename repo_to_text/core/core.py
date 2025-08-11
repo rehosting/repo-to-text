@@ -252,7 +252,8 @@ def save_repo_to_text(
         path: str = '.',
         output_dir: Optional[str] = None,
         to_stdout: bool = False,
-        cli_ignore_patterns: Optional[List[str]] = None
+        cli_ignore_patterns: Optional[List[str]] = None,
+        skip_binary: bool = False
     ) -> str:
     """Save repository structure and contents to a text file or multiple files."""
     # pylint: disable=too-many-locals
@@ -276,7 +277,8 @@ def save_repo_to_text(
         gitignore_spec,
         content_ignore_spec,
         tree_and_content_ignore_spec,
-        maximum_word_count_per_file
+        maximum_word_count_per_file,
+        skip_binary
     )
 
     if to_stdout:
@@ -350,7 +352,8 @@ def generate_output_content(
         gitignore_spec: Optional[PathSpec],
         content_ignore_spec: Optional[PathSpec],
         tree_and_content_ignore_spec: Optional[PathSpec],
-        maximum_word_count_per_file: Optional[int] = None
+        maximum_word_count_per_file: Optional[int] = None,
+        skip_binary: bool = False
     ) -> List[str]:
     """Generate the output content for the repository, potentially split into segments."""
     # pylint: disable=too-many-arguments
@@ -423,10 +426,14 @@ def generate_output_content(
                     file_content = f.read()
                 _add_chunk_to_output(file_content)
             except UnicodeDecodeError:
-                logging.debug('Handling binary file contents: %s', file_path)
-                with open(file_path, 'rb') as f_bin:
-                    binary_content: bytes = f_bin.read()
-                _add_chunk_to_output(binary_content.decode('latin1')) # Add decoded binary
+                if skip_binary:
+                    _add_chunk_to_output("binary content skipped")
+                    continue
+                else:
+                    logging.debug('Handling binary file contents: %s', file_path)
+                    with open(file_path, 'rb') as f_bin:
+                        binary_content: bytes = f_bin.read()
+                    _add_chunk_to_output(binary_content.decode('latin1')) # Add decoded binary
             except FileNotFoundError as e:
                 # Minimal handling for bad symlinks
                 if os.path.islink(file_path) and not os.path.exists(file_path):
